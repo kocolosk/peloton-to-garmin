@@ -40,7 +40,7 @@ jobs:
             "Tcx": false,
             "SaveLocalCopy": ${{ github.event.inputs.saveLocalCopy || false }},
             "DeviceInfoSettings": {
-              "cycling": {
+              "none": {
                 "name": "TacxTrainingAppWin",
                 "unitId": 1,
                 "productID": 20533,
