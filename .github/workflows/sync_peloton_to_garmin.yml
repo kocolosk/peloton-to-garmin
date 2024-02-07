@@ -19,7 +19,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     # The type of runner that the job will run on
-    container: 
+    container:
       image:  philosowaffle/peloton-to-garmin:console-stable
     steps:
     - name: Set env
@@ -29,7 +29,7 @@ jobs:
       env:
         DEFAULT_WORKOUT_NUM: 5
       run: |
-        cat <<EOT > /app/configuration.local.json 
+        cat <<EOT > /app/configuration.local.json
         {
           "App": {
             "EnablePolling": false
@@ -74,13 +74,13 @@ jobs:
         TZ: America/New_York
 
     - name: archive files
-      # saveLocalCopy can be set when workflow action is manually run otherwise it's always skipped 
+      # saveLocalCopy can be set when workflow action is manually run otherwise it's always skipped
       if: ${{ github.event.inputs.saveLocalCopy == 'true' }}
       run: |
         apt-get update
         apt-get install -y zip
         zip -r -j output.zip ${{ env.OUTPUT_DIR }}
-        
+
     - uses: actions/upload-artifact@v3
       if: ${{ github.event.inputs.saveLocalCopy == 'true' }}
       with:
