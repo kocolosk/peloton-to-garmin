@@ -1,0 +1,98 @@
+# This is a workflow that will automatically sync your Peloton rides with Garmin
+
+name: Sync Hillary's Workouts
+
+# Controls when the action will run.
+on:
+  workflow_dispatch:
+    inputs:
+      workoutsToDownload:
+        type: number
+        default: "5"
+      saveLocalCopy:
+        type: boolean
+        default: false
+  schedule:
+    - cron: '0 17 * * *'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    # The type of runner that the job will run on
+    container: 
+      image:  philosowaffle/peloton-to-garmin:console-stable
+    steps:
+    - name: Set env
+      run: echo "OUTPUT_DIR=/app/output" >> $GITHUB_ENV
+    - run: mkdir -p ${{ env.OUTPUT_DIR }}
+    - name: Create device info file
+      env: 
+        DEVICE_INFO: ${{ secrets.DEVICE_INFO }}
+      if: ${{ env.DEVICE_INFO }}
+      run: |
+        cat <<EOT > /app/deviceInfo.xml
+        ${{secrets.DEVICE_INFO}}
+        EOT
+    - name: Create config file
+      env:
+        DEFAULT_WORKOUT_NUM: 5
+      run: |
+        cat <<EOT > /app/configuration.local.json 
+        {
+          "App": {
+            "EnablePolling": false
+          },
+          "Format": {
+            "Fit": true,
+            "Json": false,
+            "Tcx": false,
+            "SaveLocalCopy": ${{ github.event.inputs.saveLocalCopy || false }},
+            "IncludeTimeInHRZones": false,
+            "IncludeTimeInPowerZones": false,
+            "DeviceInfoPath": "./deviceInfo.xml"
+          },
+          "Peloton": {
+            "NumWorkoutsToDownload": ${{ github.event.inputs.workoutsToDownload || env.DEFAULT_WORKOUT_NUM }},
+          },
+          "Garmin": {
+            "Upload": true,
+            "FormatToUpload": "fit"
+          },
+          "Observability": {
+            "Prometheus": {
+              "Enabled": false
+            },
+            "Jaeger": {
+              "Enabled": false
+            },
+            "Serilog": {
+              "Using": [ "Serilog.Sinks.Console"],
+              "MinimumLevel": "Information"
+            }
+          }
+        }
+        EOT
+    - run: /app/ConsoleClient
+      if: ${{ env.P2G_PELOTON__EMAIL && env.P2G_PELOTON__PASSWORD && env.P2G_GARMIN__EMAIL && env.P2G_GARMIN__PASSWORD }}
+      working-directory: /app
+      env:
+        P2G_PELOTON__EMAIL: ${{ secrets.P2G_PELOTON__EMAIL_HILLARY }}
+        P2G_PELOTON__PASSWORD: ${{ secrets.P2G_PELOTON__PASSWORD_HILLARY }}
+        P2G_GARMIN__EMAIL: ${{ secrets.P2G_GARMIN__EMAIL_HILLARY }}
+        P2G_GARMIN__PASSWORD: ${{ secrets.P2G_GARMIN__PASSWORD_HILLARY }}
+        TZ: America/New_York
+
+    - name: archive files
+      # saveLocalCopy can be set when workflow action is manually run otherwise it's always skipped 
+      if: ${{ github.event.inputs.saveLocalCopy == 'true' }}
+      run: |
+        apt-get update
+        apt-get install -y zip
+        zip -r -j output.zip ${{ env.OUTPUT_DIR }}
+        
+    - uses: actions/upload-artifact@v3
+      if: ${{ github.event.inputs.saveLocalCopy == 'true' }}
+      with:
+        name: output
+        path: output.zip
+        if-no-files-found: error
