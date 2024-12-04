@@ -63,6 +63,9 @@ jobs:
             "Upload": true,
             "FormatToUpload": "fit"
           },
+          "Developer": {
+            "UserAgent": "GCM-iOS-5.7.2.1"
+          },
           "Observability": {
             "Prometheus": {
               "Enabled": false
