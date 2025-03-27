@@ -15,16 +15,18 @@ on:
   schedule:
     - cron: '0 17 * * *'
 
+env:
+  OUTPUT_DIR: /app/output
+
 jobs:
   sync:
     runs-on: ubuntu-latest
     # The type of runner that the job will run on
-    container: 
+    container:
       image:  philosowaffle/peloton-to-garmin:console-latest
     steps:
-    - name: Set env
-      run: echo "OUTPUT_DIR=/app/output" >> $GITHUB_ENV
-    - run: mkdir -p ${{ env.OUTPUT_DIR }}
+    - name: 📁 Create output directory
+      run: mkdir -p ${{ env.OUTPUT_DIR }}
     - name: Create device info file
       env: 
         DEVICE_INFO: ${{ secrets.DEVICE_INFO }}
