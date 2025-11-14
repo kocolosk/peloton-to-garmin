@@ -1,6 +1,6 @@
 # This is a workflow that will automatically sync your Peloton rides with Garmin
 
-name: Sync workflow
+name: 🔄 Sync Workflow
 
 # Controls when the action will run.
 on:
@@ -20,21 +20,27 @@ env:
 
 jobs:
   sync:
+    name: 🔄 Sync
     runs-on: ubuntu-latest
     # The type of runner that the job will run on
-    container:
-      image:  philosowaffle/peloton-to-garmin:console-latest
+    container: 
+      image:  philosowaffle/peloton-to-garmin:console-stable
+      options: --user root
     steps:
-    - name: 📁 Create output directory
+
+    - name: 📁Create output directory
       run: mkdir -p ${{ env.OUTPUT_DIR }}
-    - name: Create config file
+
+    - name: 🗃 Create config file
       env:
         DEFAULT_WORKOUT_NUM: 5
       run: |
         cat <<EOT > /app/configuration.local.json
         {
           "App": {
-            "EnablePolling": false
+            "EnablePolling": false,
+            "CheckForUpdates": true,
+            "CloseConsoleOnFinish": true
           },
           "Format": {
             "Fit": true,
@@ -56,7 +62,11 @@ jobs:
               }
             },
             "IncludeTimeInHRZones": false,
-            "IncludeTimeInPowerZones": false
+            "IncludeTimeInPowerZones": false,
+            "StackedWorkouts": {
+              "AutomaticallyStackWorkouts": false,
+              "MaxAllowedGapSeconds": 300
+            }
           },
           "Peloton": {
             "NumWorkoutsToDownload": ${{ github.event.inputs.workoutsToDownload || env.DEFAULT_WORKOUT_NUM }},
@@ -82,7 +92,9 @@ jobs:
           }
         }
         EOT
-    - run: /app/ConsoleClient
+    
+    - name: ▶ Run P2G Sync
+      run: /app/ConsoleClient
       if: ${{ env.P2G_PELOTON__EMAIL && env.P2G_PELOTON__PASSWORD && env.P2G_GARMIN__EMAIL && env.P2G_GARMIN__PASSWORD }}
       working-directory: /app
       env:
@@ -92,17 +104,10 @@ jobs:
         P2G_GARMIN__PASSWORD: ${{ secrets.P2G_GARMIN__PASSWORD }}
         TZ: America/New_York
 
-    - name: archive files
-      # saveLocalCopy can be set when workflow action is manually run otherwise it's always skipped
-      if: ${{ github.event.inputs.saveLocalCopy == 'true' }}
-      run: |
-        apt-get update
-        apt-get install -y zip
-        zip -r -j output.zip ${{ env.OUTPUT_DIR }}
-
-    - uses: actions/upload-artifact@v4
+    - name: ⤴ Upload output directory
+      uses: actions/upload-artifact@v4
       if: ${{ github.event.inputs.saveLocalCopy == 'true' }}
       with:
         name: output
-        path: output.zip
+        path: ${{ env.OUTPUT_DIR }}
         if-no-files-found: error
