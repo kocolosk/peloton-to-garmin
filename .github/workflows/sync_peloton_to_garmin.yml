@@ -69,6 +69,7 @@ jobs:
             }
           },
           "Peloton": {
+            "ExcludeWorkoutTypes": [ "Rowing" ],
             "NumWorkoutsToDownload": ${{ github.event.inputs.workoutsToDownload || env.DEFAULT_WORKOUT_NUM }},
           },
           "Garmin": {
